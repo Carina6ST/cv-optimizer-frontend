@@ -1,15 +1,11 @@
-import axios from "axios";
+import api from "../api/client";
 
-const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    "https://cv-optimizer-backend-6qbt.onrender.com",
-});
+async function uploadResume(file) {
+  const fd = new FormData();
+  fd.append("file", file);
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-export default api;
+  const { data } = await api.post("/resumes/upload", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data; // { id?, filename, characters, preview }
+}
