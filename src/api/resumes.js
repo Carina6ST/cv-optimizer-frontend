@@ -1,4 +1,3 @@
-// src/api/resumes.js
 import api from "./client";
 
 export async function uploadResume(file) {
@@ -9,9 +8,13 @@ export async function uploadResume(file) {
     const { data } = await api.post("/resumes/upload", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return data; // { id?, filename, characters, preview }
+    return data;
   } catch (e) {
-    console.error("Upload error", e?.response?.status, e?.response?.data);
+    console.error("Upload error:", {
+      url: api.defaults.baseURL + "/resumes/upload",
+      status: e?.response?.status,
+      data: e?.response?.data,
+    });
     throw e;
   }
 }

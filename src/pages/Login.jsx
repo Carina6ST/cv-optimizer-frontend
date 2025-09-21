@@ -1,9 +1,10 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 
 export default function Login() {
-  const navigate = useNavigate?.() ?? null;
+  const navigate = useNavigate(); // no optional chaining needed
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,15 +19,23 @@ export default function Login() {
     setMsg("");
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      // IMPORTANT: send URL-encoded body to match FastAPI Form(...)
+      const body = new URLSearchParams();
+      body.append("email", email);
+      body.append("password", password);
+
+      const { data } = await api.post("/auth/login", body, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+
       const token = data?.access_token;
       if (!token) throw new Error("No access token received");
       localStorage.setItem("token", token);
+
       setMsg("Signed in! Redirecting…");
-      // Navigate to dashboard
-      if (navigate) navigate("/dashboard");
-      else window.location.href = "/dashboard";
+      navigate("/dashboard");
     } catch (e) {
+      // Show the actual backend message if available
       setErr(e?.response?.data?.detail || e.message || "Error");
     } finally {
       setLoading(false);
@@ -51,6 +60,7 @@ export default function Login() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
             />
           </div>
 
@@ -63,6 +73,7 @@ export default function Login() {
               placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </div>
 
@@ -89,10 +100,9 @@ export default function Login() {
         {msg && <div className="mt-4 text-green-700 text-sm">{msg}</div>}
         {err && <div className="mt-4 text-red-600 text-sm">{err}</div>}
 
-        {/* Small tip */}
+        {/* Debug tip */}
         <p className="mt-6 text-xs text-gray-500">
-          Trouble signing in? Make sure the site is connected to the correct
-          API:
+          API base:{" "}
           <code className="ml-1 bg-gray-100 px-1 rounded">
             {import.meta.env.VITE_API_URL || "VITE_API_URL not set"}
           </code>
