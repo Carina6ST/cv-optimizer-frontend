@@ -1,34 +1,33 @@
-import React, { useRef, useState } from "react";
-import api from "../api/client";
+// frontend/src/components/UploadBox.jsx
+import React, { useState } from "react";
+import { uploadResume } from "../api/resumes";
 
-export default function UploadBox({ onUploaded }) {
-  const ref = useRef();
+export default function UploadBox() {
+  const [file, setFile] = useState(null);
+  const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const onUpload = async () => {
+    setMsg("");
     setErr("");
-    const f = ref.current?.files?.[0];
-    if (!f) { setErr("Choose a PDF or DOCX"); return; }
-    const fd = new FormData();
-    fd.append("file", f);
+    if (!file) return setErr("Choose a file first");
     try {
-      setLoading(true);
-      const { data } = await api.post("/resume/upload", fd, { headers: { "Content-Type": "multipart/form-data" }});
-      onUploaded(data);
+      const res = await uploadResume(file);
+      setMsg(`Uploaded: ${res.filename} (${res.characters} chars)`);
     } catch (e) {
-      setErr(e.response?.data?.detail || "Upload failed");
-    } finally {
-      setLoading(false);
+      setErr(e?.response?.data?.detail || e.message || "Upload failed");
     }
   };
 
   return (
-    <form onSubmit={submit} className="border-2 border-dashed rounded-xl p-6 space-y-3">
-      <input ref={ref} type="file" accept=".pdf,.docx" />
-      <button className="bg-black text-white px-4 py-2 rounded" disabled={loading}>{loading ? "Uploading..." : "Upload"}</button>
-      {err && <div className="text-red-600 text-sm">{err}</div>}
-    </form>
+    <div>
+      <input
+        type="file"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
+      <button onClick={onUpload}>Upload</button>
+      {msg && <div style={{ color: "green" }}>{msg}</div>}
+      {err && <div style={{ color: "red" }}>{err}</div>}
+    </div>
   );
 }

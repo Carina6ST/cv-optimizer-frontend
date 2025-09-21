@@ -1,11 +1,13 @@
-import api from "../api/client";
+import axios from "axios";
 
-async function uploadResume(file) {
-  const fd = new FormData();
-  fd.append("file", file);
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000", // NO /api at the end
+});
 
-  const { data } = await api.post("/resumes/upload", fd, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data; // { id?, filename, characters, preview }
-}
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export default api;
