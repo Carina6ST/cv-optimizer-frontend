@@ -1,34 +1,56 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client";
 
 export default function Login() {
-  const navigate = useNavigate();
+  const navigate = (() => {
+    try {
+      return useNavigate();
+    } catch {
+      return null;
+    }
+  })();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
-  const onSubmit = async (e) => {
+  async function onSubmit(e) {
     e.preventDefault();
     setErr("");
     setMsg("");
     setLoading(true);
+
     try {
-      // JSON works because backend accepts JSON or Form
-      const { data } = await api.post("/auth/login", { email, password });
-      const token = data?.access_token;
-      if (!token) throw new Error("No access token received");
+      // POST /auth/login -> { access_token, token_type }
+      const res = await api.post("/auth/login", { email, password });
+      const token = res?.data?.access_token;
+
+      if (!token) throw new Error("No access token returned from server.");
+
+      // persist the JWT
       localStorage.setItem("token", token);
+
       setMsg("Signed in! Redirecting…");
-      navigate("/dashboard");
+      // small delay so the success message is visible
+      setTimeout(() => {
+        if (navigate) navigate("/dashboard");
+        else window.location.assign("/dashboard");
+      }, 300);
     } catch (e) {
-      setErr(e?.response?.data?.detail || e.message || "Error");
+      const apiMsg =
+        e?.response?.data?.detail ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Login failed";
+      setErr(apiMsg);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -44,23 +66,27 @@ export default function Login() {
             <input
               type="email"
               required
+              autoComplete="email"
               className="w-full border rounded p-3"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
             />
           </div>
+
           <div>
             <label className="block text-sm mb-1">Password</label>
             <input
               type="password"
               required
+              autoComplete="current-password"
               className="w-full border rounded p-3"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -71,21 +97,21 @@ export default function Login() {
         </form>
 
         <div className="flex items-center justify-between mt-4 text-sm">
-          <a className="underline" href="/forgot-password">
+          <Link className="underline" to="/forgot-password">
             Forgot password?
-          </a>
-          <a className="underline" href="/register">
+          </Link>
+          <Link className="underline" to="/register">
             Create an account
-          </a>
+          </Link>
         </div>
 
         {msg && <div className="mt-4 text-green-700 text-sm">{msg}</div>}
         {err && <div className="mt-4 text-red-600 text-sm">{err}</div>}
 
         <p className="mt-6 text-xs text-gray-500">
-          API:{" "}
+          API base:{" "}
           <code className="bg-gray-100 px-1 rounded">
-            {import.meta.env.VITE_API_URL || "VITE_API_URL not set"}
+            {import.meta.env.VITE_API_URL || "(VITE_API_URL not set)"}
           </code>
         </p>
       </div>
